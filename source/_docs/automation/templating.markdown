@@ -34,6 +34,36 @@ The following tables show the available trigger data per platform.
 | `trigger.event.event_type` | Event type.
 | `trigger.event.data` | Optional event data.
 
+```yaml
+trigger:
+- platform: event
+  event_type: zha_event
+  event_data:
+    device_ieee: 00:12:4b:11:21:35:ae:22
+
+action:
+- choose:
+  - conditions:
+    - '{{ trigger.event.data.command == "toggle" }}'
+    sequence: 
+      - service: light.toggle
+        target:
+          entity_id: light.basement
+  - conditions:
+    - '{{ trigger.event.data.command == "on" }}'
+    sequence:
+      - service: notify.alexa_media
+          data:
+            data:
+              type: tts
+            target: media_player.kitchen
+            message: "Dinner is ready"
+  - conditions:
+    - '{{ trigger.event.data.command == "off" }}'
+    sequence:
+      - service: script.nighttime_shutdown
+```
+
 ### MQTT
 
 | Template variable | Data |
@@ -43,6 +73,18 @@ The following tables show the available trigger data per platform.
 | `trigger.payload` | Payload.
 | `trigger.payload_json` | Dictonary of the JSON parsed payload.
 | `trigger.qos` | QOS of payload.
+
+```yaml
+
+  trigger:
+    - platform: mqtt
+      topic: "/notify/+"
+  action:
+    service: >
+      notify.{{ trigger.topic.split('/')[-1] }}
+    data:
+      message: "{{ trigger.payload }}"
+```
 
 ### Numeric State
 
@@ -65,6 +107,36 @@ The following tables show the available trigger data per platform.
 | `trigger.from_state` | The previous [state object] of the entity.
 | `trigger.to_state` | The new [state object] that triggered trigger.
 | `trigger.for` | Timedelta object how long state has been to state, if any.
+
+```yaml
+automation:
+  trigger:
+    - platform: state
+      entity_id: device_tracker.paulus
+  action:
+    - service: notify.notify
+      data:
+        message: >
+          Paulus just changed from {{ trigger.from_state.state }}
+          to {{ trigger.to_state.state }}
+ 
+automation_2:
+  trigger:
+    # Multiple entities for which you want to perform the same action.
+    - platform: state
+      entity_id:
+        - light.bedroom_closet
+        - light.kiddos_closet
+        - light.linen_closet
+      to: "on"
+      # Trigger when someone leaves one of those lights on for 10 minutes.
+      for: "00:10:00"
+  action:
+    - service: light.turn_off
+      target:
+        # Turn off whichever entity triggered the automation.
+        entity_id: "{{ trigger.entity_id }}"
+```
 
 ### Sun
 
@@ -90,6 +162,36 @@ The following tables show the available trigger data per platform.
 | ---- | ---- |
 | `trigger.platform` | Hardcoded: `time`
 | `trigger.now` | DateTime object that triggered the time trigger.
+
+```yaml
+
+trigger:
+  - platform: time
+    at: '09:00:00'
+  - platform: sun
+    event: sunset
+    offset: '-01:30:00'
+condition: []
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: '{{(trigger.now.time()|string)[:5] == ''09:00'' }}'
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: light.living_room_lamps
+      - conditions:
+          - condition: template
+            value_template: '{{ trigger.offset.total_seconds()/60 == -90 }}'
+        sequence:
+          - service: light.turn_on
+            data:
+              color_temp: 350
+              brightness_pct: 100
+            target:
+              entity_id: light.living_room_lamps
+```
 
 ### Time Pattern
 
@@ -119,51 +221,5 @@ The following tables show the available trigger data per platform.
 | `trigger.zone` | State object of zone
 | `trigger.event` | Event that trigger observed: `enter` or `leave`.
 
-## Examples
-
-{% raw %}
-
-```yaml
-# Example configuration.yaml entries
-automation:
-  trigger:
-    - platform: state
-      entity_id: device_tracker.paulus
-  action:
-    - service: notify.notify
-      data:
-        message: >
-          Paulus just changed from {{ trigger.from_state.state }}
-          to {{ trigger.to_state.state }}
-
-automation 2:
-  trigger:
-    - platform: mqtt
-      topic: "/notify/+"
-  action:
-    service: >
-      notify.{{ trigger.topic.split('/')[-1] }}
-    data:
-      message: "{{ trigger.payload }}"
-
-automation 3:
-  trigger:
-    # Multiple entities for which you want to perform the same action.
-    - platform: state
-      entity_id:
-        - light.bedroom_closet
-        - light.kiddos_closet
-        - light.linen_closet
-      to: "on"
-      # Trigger when someone leaves one of those lights on for 10 minutes.
-      for: "00:10:00"
-  action:
-    - service: light.turn_off
-      target:
-        # Turn off whichever entity triggered the automation.
-        entity_id: "{{ trigger.entity_id }}"
-```
-
-{% endraw %}
 
 [state object]: /docs/configuration/state_object/
