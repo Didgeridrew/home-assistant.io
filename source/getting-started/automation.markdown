@@ -1,4 +1,4 @@
----
+--- 
 title: "Automating Home Assistant"
 description: "A quick intro on getting your first automation going."
 ---
