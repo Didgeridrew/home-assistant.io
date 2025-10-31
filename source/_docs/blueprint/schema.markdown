@@ -217,8 +217,9 @@ blueprint:
 ### Blueprint inputs in templates
 
 The inputs are available as custom YAML tags, but not as template variables.
-To use a blueprint input in a template, it first needs to be exposed as either
-a [script level variable](/integrations/script/#configuration-variables) or in
+To use a blueprint input in a template, it first needs to be exposed as 
+a [trigger variable](/automation/trigger/#trigger-variables), 
+[script level variable](/integrations/script/#configuration-variables), or in
 a [variable script step](/docs/scripts/#variables).
 
 ```yaml
